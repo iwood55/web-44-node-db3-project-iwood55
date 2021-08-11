@@ -1,23 +1,20 @@
-function find() { // EXERCISE A
-  /*
-    1A- Study the SQL query below running it in SQLite Studio against `data/schemes.db3`.
-    What happens if we change from a LEFT join to an INNER join?
+const db = require("../../data/db-config")
 
-      SELECT
-          sc.*,
-          count(st.step_id) as number_of_steps
-      FROM schemes as sc
-      LEFT JOIN steps as st
-          ON sc.scheme_id = st.scheme_id
-      GROUP BY sc.scheme_id
-      ORDER BY sc.scheme_id ASC;
-
-    2A- When you have a grasp on the query go ahead and build it in Knex.
-    Return from this function the resulting dataset.
-  */
+function find() {
+    return db("schemes as sc")
+    .leftJoin("steps as st", "sc.scheme_id", "st.scheme_id")
+    .select("sc.*", "st.step_id as number_of_steps")
+    .count("st.step_id as number_of_steps")
+    .orderBy("sc.scheme_id")
+    .groupBy("sc.scheme_name");
 }
 
-function findById(scheme_id) { // EXERCISE B
+async function findById (scheme_id) {
+  // return db("schemes as sc")
+  //     .leftJoin("steps as st", "st.scheme_id", "sc.scheme_id")
+  //     .select("sc.scheme_name", "st.step_id", "st.step_number", "st.instructions", "sc.scheme_id")
+  //     .where("sc.scheme_id", scheme_id)
+  //     .orderBy("st.step_number", "asc")
   /*
     1B- Study the SQL query below running it in SQLite Studio against `data/schemes.db3`:
 
@@ -106,20 +103,45 @@ function findSteps(scheme_id) { // EXERCISE C
         }
       ]
   */
+      return db("steps as st")
+  .join("schemes as sch", "sch.scheme_id", "st.scheme_id")
+  .select("st.step_id", "st.step_number", "st.instructions", "sch.scheme_name")
+  .where("st.scheme_id", scheme_id)
+  .orderBy("st.step_number", "asc")
 }
 
-function add(scheme) { // EXERCISE D
+async function add(scheme) { // EXERCISE D
   /*
     1D- This function creates a new scheme and resolves to _the newly created scheme_.
   */
+    return db('schemes').insert(scheme)
+    .then(([scheme_id]) => {
+      return db('schemes').where('scheme_id', scheme_id).first()
+  })
 }
 
-function addStep(scheme_id, step) { // EXERCISE E
+async function addStep(scheme_id, step) { // EXERCISE E
   /*
     1E- This function adds a step to the scheme with the given `scheme_id`
     and resolves to _all the steps_ belonging to the given `scheme_id`,
     including the newly created one.
   */
+  //   return db('steps').insert({
+  //     ...steps,
+  //     scheme_id
+  //   })
+  //   .then(() => {
+  //     return db('steps as st')
+  //     .join('schemes as sc', 'sc.scheme_id', 'st.scheme_id')
+  //     .select('step_id', 'step_number', 'instructions', 'scheme_name')
+  //     .orderBy('step_number')
+  //     .where('sc.scheme-id', scheme_id)
+  // })
+  scheme_id = await db("steps as st")
+    .insert(step)
+    .select("st.instruction")
+    .orderBy("st.step_number");
+  return findSteps(scheme_id);
 }
 
 module.exports = {
